@@ -1,0 +1,286 @@
+---
+title: 'Project 1: Exploratory Data Analysis'
+author: "SDS348"
+date: '2020-12-11'
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F,
+tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
+```
+
+Alexandra Asgarian
+aa76337
+
+
+## Data Wrangling and Data Exploration
+
+```{R}
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(cluster)
+partisan_lean_state <- read_csv("partisan_lean_state.csv")
+education <- read_csv("education.csv")
+stateabbr <- read.csv("stateabbr.csv")
+```
+
+
+### Introduction 
+
+My two datasets are from the server. The first, originally called "education", was from the carData package (originally labeled "States") and my second was called "partisan_lean_state" from the fivethirtyeight package. I also used stateabbr from the server to help combine the two packages on the basis of state. The variables in "education" are state, region (U.S. Census region), pop (population in 1,000s), SATV (average score of graduating high-school  students in the state on the verbal component of the SAT), SATM (average score of graduating high-school  students in the state on the math component of the SAT), percent (percent of graduating high school students in the state who took the SAT exam), dollars (state spending on public education, in $1,000s per student), and pay (average teacher's salary in the state, in $1000s). The second dataset, "partisan_lean_state", includes the state, pvi_party (the party of the vote), and the pvi_amount (the Cook Partisan Voting Index of the vote). These datasets were interesting to me because I've always been a strong supporter of education, properly funding public education, and providing teachers with a salary equivalent to their Herculean efforts, thus I wanted to look further in the States dataset. However, I needed to compare this to more data and I'm also very invested in politics, so the "partisan_lean_state" provided some interesting comparisons with partisan leanings. Ultimately, I do not expect strong associations between either party and funding education and quality of education in state, but given my own partisan leanings, I hope there is a strong correlation with my own party.
+
+
+### 1. Tidying: Rearranging Wide/Long 
+
+```{R}
+partisan_lean_state -> partisan
+education1 <- full_join(stateabbr, education, by= c("Code"="State"))
+edu <- full_join(partisan, education1, by= c("state"="State"))
+
+edu2 <- edu %>% pivot_wider(names_from="pvi_party", values_from="dollars")
+head(edu2)
+edu4 <- edu %>% pivot_longer(c("SATV", "SATM"), names_to="name", values_to="SAT") %>% select(-name)
+head(edu4)
+```
+
+Since my data was already tidy, I illustrated how pivot_longer and pivot_wider may be used above. For my data neither makes sense if I want a neat table, but here I used pivot_wider to separate state spending in $1,000s per student by political party of the state. Therefore, you can see how much Republican (R), Democrat (D), and NA states invest in public education. For pivot_longer, I took both SAT columns and put them under one column, no longer distinguishing between the verbal and math components. However, this does duplicate the number of rows.
+    
+### 2. Joining/Merging 
+
+```{R}
+partisan_lean_state -> partisan
+education1 <- full_join(stateabbr, education, by= c("Code"="State"))
+edu <- full_join(partisan, education1, by= c("state"="State"))
+```
+
+I completed full joins and have combined partisan_lean_state and education with the help of stateabbr. I had to use stateabbr because education had abbreviated state names while partisan_lean_state had full state names. I chose a full join because my data matched up well and I wanted to keep all the data from each. The joins resulted in a 52 observation dataset with 12 variables. The education dataset had 51 observations with 8 variables, stateabbr had 51 observations with 3 variables, and partisan_lean_state/partisan had 50 observations with 3 variables.
+
+
+### 3. Wrangling 
+
+```{R}
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(pay))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(dollars))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(percent))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(SATM))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(SATV))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(pop))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(pvi_amount))
+
+
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(pay))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(dollars))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(percent))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(SATM))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(SATV))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(pop))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(pvi_amount))
+
+
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(var(pay))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(var(dollars))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(var(percent))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(var(SATM))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(var(SATV))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(var(pop))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(var(pvi_amount))
+
+edu %>% na.omit %>% select_if(is.numeric) %>% count(pay)
+edu %>% na.omit %>% select_if(is.numeric) %>% count(dollars)
+edu %>% na.omit %>% select_if(is.numeric) %>% count(percent)
+edu %>% na.omit %>% select_if(is.numeric) %>% count(SATM)
+edu %>% na.omit %>% select_if(is.numeric) %>% count(SATV)
+edu %>% na.omit %>% select_if(is.numeric) %>% count(pop)
+edu %>% na.omit %>% select_if(is.numeric) %>% count(pvi_amount)
+
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(quantile(pay))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(quantile(dollars))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(quantile(percent))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(quantile(SATM))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(quantile(SATV))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(quantile(pop))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(quantile(pvi_amount))
+
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(min(pay))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(min(dollars))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(min(percent))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(min(SATM))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(min(SATV))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(min(pop))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(min(pvi_amount))
+
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(max(pay))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(max(dollars))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(max(percent))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(max(SATM))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(max(SATV))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(max(pop))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(max(pvi_amount))
+
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(pay))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(dollars))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(percent))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(SATM))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(SATV))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(pop))
+edu %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(pvi_amount))
+
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(pay))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(dollars))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(percent))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(SATM))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(SATV))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(pop))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(n_distinct(pvi_amount))
+
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(pay)) 
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(dollars)) 
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(percent))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(SATM))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(SATV))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(pop))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(pvi_amount))
+
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(pay))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(dollars))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(percent))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(SATM))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(SATV))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(pop))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(sd(pvi_amount))
+
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(var(pay))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(var(dollars))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(var(percent))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(var(SATM))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(var(SATV))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(var(pop))
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% summarize(var(pvi_amount))
+
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% count(pay)
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% count(dollars)
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% count(percent)
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% count(SATM)
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% count(SATV)
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% count(pop)
+edu %>% group_by(region) %>% na.omit %>% select_if(is.numeric) %>% count(pvi_amount)
+
+edu %>% group_by(pvi_party, region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(pay))
+edu %>% group_by(pvi_party, region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(dollars))
+edu %>% group_by(pvi_party, region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(percent))
+edu %>% group_by(pvi_party, region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(SATM))
+edu %>% group_by(pvi_party, region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(SATV))
+edu %>% group_by(pvi_party, region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(pop))
+edu %>% group_by(pvi_party, region) %>% na.omit %>% select_if(is.numeric) %>% summarize(mean(pvi_amount))
+
+edu %>% group_by(region) %>% count()
+
+edu %>% filter(pvi_party == "R") %>% summarize(max(dollars))
+edu %>% filter(pvi_party == "R") %>% summarize(min(dollars))
+
+edu %>% select_if(is.numeric) %>% cor(use="pair")
+
+edu %>% filter(region == "ESC") %>% select(state)
+
+edu %>% select(state, dollars) %>% arrange(desc(dollars))
+edu %>% select(state, dollars) %>% arrange(dollars)
+
+edu %>% group_by(region) %>% mutate(region_salary= mean(pay))
+edu %>% na.omit %>% group_by(pvi_party) %>% mutate(party_salary = mean(pay)) %>% select(pvi_party, party_salary)
+
+edu %>% na.omit %>% as.data.frame %>% group_by(pvi_party) %>% select_if(is.numeric) %>% summarize(min(dollars))
+edu %>% na.omit %>% as.data.frame %>% group_by(pvi_party) %>% select_if(is.numeric) %>% summarize(max(dollars))
+
+edu %>% group_by(pvi_party) %>% count()
+
+NAcount <- function(x)sum(is.na(x))
+edu %>% summarize_all(NAcount)
+
+
+```
+
+Here you see a plethora of summary statistics for the numeric variables. The functions sd (standard deviation), count, n_distinct (distinct counts), var (variance), quantile, max, and min were applied to pay, dollars, percent, SATM, SATV, pop, and pvi_amount before and after grouping region and then political party and region. These variables stand for pop (population in 1,000s), SATV (average score of graduating high-school  students in the state on the verbal component of the SAT), SATM (average score of graduating high-school  students in the state on the math component of the SAT), percent (percent of graduating high school students in the state who took the SAT exam), dollars (state spending on public education, in $1,000s per student), pay (average teacher's salary in the state, in $1000s), and the pvi_amount (the Cook Partisan Voting Index of the vote). Also, fun statistics were found based on questions I had about my own data during this project which use the six core dplyr functions (filter, select, arrange, group_by, mutate, summarize).
+
+Some interesting statistics from this inquiry are that New Jersey invests the most in public education with an allocated $9,159 per student. Alternatively, Utah invests the least in public education with an allocated $2,993 per student. Also, democratic states pay teachers an average of $34,167 while republican states, on average, pay $28,419. Further, the cor function depicts correlations with every numeric variable to one another.
+
+### 4. Visualizing 
+```{R}
+educor <- edu %>% select_if(is.numeric) %>% cor(use="pair")
+tidyedu <- educor %>% as.data.frame %>% rownames_to_column("var1") %>% pivot_longer(-1,names_to="var2",values_to="correlation")
+
+tidyedu %>% ggplot(aes(var1,var2,fill=correlation))+ geom_tile() + xlab("") + ylab("")+ 
+scale_fill_gradient2(low="coral",mid="white",high="cornflowerblue")+
+geom_text(aes(label=round(correlation,2)),color = "black", size = 4)+ theme(axis.text.x = element_text(angle = 90, hjust=1))+ coord_fixed()
+
+```
+
+Above is a heatmap of my numeric variables. The strength of the correlation between two variables is shown by the gradient. Of course, a variable when compared to itself will be entirely related as is seen by the 1's on the map. Further, some interesting insights from the graph include that population of the state has a very low correlation to dollars spent on public education per child. SAT verbal scores for students is directly related (0.96) to the students' SAT math score which is not unsurprising. Entirely unrelated (-0.86) are the SAT scores to percent of graduating high school students in the state who took the SAT exam. However, one of the most interesting correlations is that percent of graduating high school students in the state fairly relates to the amount of dollars invested in public education per child.
+
+
+```{R}
+ggplot(edu, aes(x = pvi_party, fill= region))+ geom_bar(position="fill") + xlab("Political Party") + ylab("Percent") + ggtitle("Regional Partisan Makeup  of the US") + scale_fill_brewer(palette = "PuRd")
+
+```
+
+This percent stacked barplot shows the percentages of the political parties of states in each region of the United States of America. From this plot we can tell that the Mountain region (Arizona, Colorado, Idaho, Montana, Nevada, New Mexico, Utah and Wyoming) is mostly Republican leaning states. However, the Pacific region (Alaska, California, Hawaii, Oregon, and Washington) is mostly democratic. Unsurprisingly, the WSC region (Arkansas, Louisiana, Oklahoma, and Texas) is entirely republican. The regions least contributing to the Republican party's percentage of the US are New England, the Mid-Atlantic, and the Pacific regions. The region contributing least to the percentage of Democratic states is the WNC region (Iowa, Kansas, Minnesota,	Missouri,	Nebraska,	North Dakota, and South Dakota).
+
+
+```{R}
+ggplot(edu, aes(x = region, y = dollars, fill= pvi_party))+ geom_bar(stat="summary", position="dodge") + scale_fill_manual (values=c("R"="darkred","D"="darkblue")) + xlab("Region of the US") + scale_y_continuous(breaks= seq(0,9,.5), name="Avg. State Spending on Public Education (in $1,000s per student)") + ggtitle("State Spending on Public Education v Region by Political Parties")
+```
+
+The graph above depicts the average state spending on public education by region and political party. The highest average investment in education comes from democratic states in the Mid-Atlantic region of the US. This is followed by the republican state in the Pacific region (Alaska). The lowest average investment in education is by republican states in the ESC region (Alabama, Kentucky, Mississippi, and Tennessee) followed closely by republican states in the WSC region (Arkansas, Louisiana, Oklahoma, and Texas). Knowledge of this data could impact residents of these states if they are worried about the allocated funds for their children's education/future.
+
+
+```{R}
+ggplot(data = edu, aes(x = pay, y = percent, color = pvi_party))+
+  geom_point(size = 3) + 
+  geom_line(aes(group=pvi_party)) +
+  theme_minimal() +
+  scale_x_continuous(breaks= seq(0,50,5), name="Average Teacher's Salary per State (in $1000s)") +  scale_y_continuous(breaks= seq(0,80,10), name="% of Graduating High School Seniors Who Took the SAT Exam") + ggtitle("Percent of Graduating Seniors v Average Teacher's Salary by Political Party")
+ 
+```
+
+The plot above displays the relationship between average teacher's salary per state in the US and the percentage of graduating seniors who took the SAT. The distinction that these seniors have taken the SAT illuminates they plan on continuing their education. The graph shows that both political parties follow similar trends and that overall, a higher teacher's salary does tend to correlate to a higher percentage of students taking the SAT. This may mean that investing in teachers will help them give more time to their students (as many work multiple jobs just to survive) which will then translate to students taking greater concern in their own futures and seeing the benefit of education. As there are more republican leaning states, we see more teal colored dots on the graph. The graph shows that democratic states pay teacher's above $25,000, while 6 republican states pay teachers equal or less than $25,000. Except for one instance, a teacher's salary above $35,000 results in at least 40% of graduating seniors taking their SATs. 
+    
+    
+### 5. Dimensionality Reduction 
+
+```{R}
+
+edu1 <- edu %>% select("percent", "dollars", "pay") %>% na.omit
+edu_2 <- edu1 %>% mutate_if(is.character,as.factor)
+gower_edu <- daisy(edu_2, metric = "gower")
+
+sil_width<-vector()
+for(i in 2:10){
+  pam_fit <- pam(gower_edu, k = i)
+  sil_width[i] <- pam_fit$silinfo$avg.width
+}
+ggplot()+geom_line(aes(x=1:10,y=sil_width))+scale_x_continuous(name="k",breaks=1:10)
+
+
+```
+    
+```{R}
+pam2 <- pam(gower_edu, k=2, diss=T)
+pam2
+
+plot(pam2, which=2)
+
+```
+```{R}
+plot(pam2, which=1)
+```
+
+The graph of silhouette width (silhouette width v k) shows that the data should be clustered in two groups given the high silhouette with at k=2. A higher silhouette width is optimal because this means the data is more cohesive. Clustering began with choosing 3 numeric variables for which we computed Gower dissimilarities. I chose percent (percent of graduating high school students in the state who took the SAT exam), dollars (state spending on public education, in $1,000s per student), and pay (average teacher's salary in the state, in $1000s). The Gower dissimilarities were used to cluster with PAM. The silhouette plot of PAM shows us that a reasonable structure has been found as the average silhouette width (0.52) falls between 0.51 and 0.70! The final plot shows the two clusters generated through this process and shows that they explain 51.06% of point variability or, in other words, roughly half of the data on these three variables is depicted by this plot.
+

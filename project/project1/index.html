@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alexandra Asgarian" />
+    
+    <link rel="shortcut icon" type="image/x-icon" href="../../img/favicon.ico">
+    <title>Project 1: Exploratory Data Analysis</title>
+    <meta name="generator" content="Hugo 0.79.0" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="../../css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="../../"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="../../post/">BLOG</a></li>
+        
+        <li><a href="../../projects/">PROJECTS</a></li>
+        
+        <li><a href="../../resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      <div class="container">
+        <div class="blog-post">
+          <h3>
+            <strong><a href="../../project/project1/">Project 1: Exploratory Data Analysis</a></strong>
+          </h3>
+        </div>
+ 
+<div class="blog-title">
+          <h4>
+         December 11, 2020 
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+
+
+<p>Alexandra Asgarian aa76337</p>
+<div id="data-wrangling-and-data-exploration" class="section level2">
+<h2>Data Wrangling and Data Exploration</h2>
+<pre class="r"><code>library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(cluster)
+partisan_lean_state &lt;- read_csv(&quot;partisan_lean_state.csv&quot;)
+education &lt;- read_csv(&quot;education.csv&quot;)
+stateabbr &lt;- read.csv(&quot;stateabbr.csv&quot;)</code></pre>
+<div id="introduction" class="section level3">
+<h3>Introduction</h3>
+<p>My two datasets are from the server. The first, originally called &quot;education&quot;, was from the carData package (originally labeled &quot;States&quot;) and my second was called &quot;partisan_lean_state&quot; from the fivethirtyeight package. I also used stateabbr from the server to help combine the two packages on the basis of state. The variables in &quot;education&quot; are state, region (U.S. Census region), pop (population in 1,000s), SATV (average score of graduating high-school students in the state on the verbal component of the SAT), SATM (average score of graduating high-school students in the state on the math component of the SAT), percent (percent of graduating high school students in the state who took the SAT exam), dollars (state spending on public education, in $1,000s per student), and pay (average teacher's salary in the state, in $1000s). The second dataset, &quot;partisan_lean_state&quot;, includes the state, pvi_party (the party of the vote), and the pvi_amount (the Cook Partisan Voting Index of the vote). These datasets were interesting to me because I've always been a strong supporter of education, properly funding public education, and providing teachers with a salary equivalent to their Herculean efforts, thus I wanted to look further in the States dataset. However, I needed to compare this to more data and I'm also very invested in politics, so the &quot;partisan_lean_state&quot; provided some interesting comparisons with partisan leanings. Ultimately, I do not expect strong associations between either party and funding education and quality of education in state, but given my own partisan leanings, I hope there is a strong correlation with my own party.</p>
+</div>
+<div id="tidying-rearranging-widelong" class="section level3">
+<h3>1. Tidying: Rearranging Wide/Long</h3>
+<pre class="r"><code>partisan &lt;- partisan_lean_state
+education1 &lt;- full_join(stateabbr, education, by = c(Code = &quot;State&quot;))
+edu &lt;- full_join(partisan, education1, by = c(state = &quot;State&quot;))
+
+edu2 &lt;- edu %&gt;% pivot_wider(names_from = &quot;pvi_party&quot;, values_from = &quot;dollars&quot;)
+head(edu2)</code></pre>
+<pre><code>## # A tibble: 6 x 13
+##   state pvi_amount Abbrev Code  region   pop  SATV  SATM percent   pay     R
+##   &lt;chr&gt;      &lt;dbl&gt; &lt;fct&gt;  &lt;chr&gt; &lt;chr&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 Alab…         27 Ala.   AL    ESC     4041   470   514       8    27  3.65
+## 2 Alas…         15 Alaska AK    PAC      550   438   476      42    43  7.89
+## 3 Ariz…          9 Ariz.  AZ    MTN     3665   445   497      25    30  4.23
+## 4 Arka…         24 Ark.   AR    WSC     2351   470   511       6    23  3.33
+## 5 Cali…         24 Calif. CA    PAC    29760   419   484      45    39 NA   
+## 6 Colo…          1 Colo.  CO    MTN     3294   456   513      28    31 NA   
+## # … with 2 more variables: D &lt;dbl&gt;, `NA` &lt;dbl&gt;</code></pre>
+<pre class="r"><code>edu4 &lt;- edu %&gt;% pivot_longer(c(&quot;SATV&quot;, &quot;SATM&quot;), names_to = &quot;name&quot;, 
+    values_to = &quot;SAT&quot;) %&gt;% select(-name)
+head(edu4)</code></pre>
+<pre><code>## # A tibble: 6 x 11
+##   state pvi_party pvi_amount Abbrev Code  region   pop percent dollars   pay
+##   &lt;chr&gt; &lt;chr&gt;          &lt;dbl&gt; &lt;fct&gt;  &lt;chr&gt; &lt;chr&gt;  &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;
+## 1 Alab… R                 27 Ala.   AL    ESC     4041       8    3.65    27
+## 2 Alab… R                 27 Ala.   AL    ESC     4041       8    3.65    27
+## 3 Alas… R                 15 Alaska AK    PAC      550      42    7.89    43
+## 4 Alas… R                 15 Alaska AK    PAC      550      42    7.89    43
+## 5 Ariz… R                  9 Ariz.  AZ    MTN     3665      25    4.23    30
+## 6 Ariz… R                  9 Ariz.  AZ    MTN     3665      25    4.23    30
+## # … with 1 more variable: SAT &lt;dbl&gt;</code></pre>
+<p>Since my data was already tidy, I illustrated how pivot_longer and pivot_wider may be used above. For my data neither makes sense if I want a neat table, but here I used pivot_wider to separate state spending in $1,000s per student by political party of the state. Therefore, you can see how much Republican (R), Democrat (D), and NA states invest in public education. For pivot_longer, I took both SAT columns and put them under one column, no longer distinguishing between the verbal and math components. However, this does duplicate the number of rows.</p>
+</div>
+<div id="joiningmerging" class="section level3">
+<h3>2. Joining/Merging</h3>
+<pre class="r"><code>partisan &lt;- partisan_lean_state
+education1 &lt;- full_join(stateabbr, education, by = c(Code = &quot;State&quot;))
+edu &lt;- full_join(partisan, education1, by = c(state = &quot;State&quot;))</code></pre>
+<p>I completed full joins and have combined partisan_lean_state and education with the help of stateabbr. I had to use stateabbr because education had abbreviated state names while partisan_lean_state had full state names. I chose a full join because my data matched up well and I wanted to keep all the data from each. The joins resulted in a 52 observation dataset with 12 variables. The education dataset had 51 observations with 8 variables, stateabbr had 51 observations with 3 variables, and partisan_lean_state/partisan had 50 observations with 3 variables.</p>
+</div>
+<div id="wrangling" class="section level3">
+<h3>3. Wrangling</h3>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(mean(pay))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `mean(pay)`
+##         &lt;dbl&gt;
+## 1        30.5</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(mean(dollars))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `mean(dollars)`
+##             &lt;dbl&gt;
+## 1            5.06</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(mean(percent))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `mean(percent)`
+##             &lt;dbl&gt;
+## 1            32.2</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(mean(SATM))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `mean(SATM)`
+##          &lt;dbl&gt;
+## 1         499.</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(mean(SATV))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `mean(SATV)`
+##          &lt;dbl&gt;
+## 1         449.</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(mean(pop))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `mean(pop)`
+##         &lt;dbl&gt;
+## 1       4996.</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(mean(pvi_amount))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `mean(pvi_amount)`
+##                &lt;dbl&gt;
+## 1               17.1</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(sd(pay))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `sd(pay)`
+##       &lt;dbl&gt;
+## 1      4.98</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(sd(dollars))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `sd(dollars)`
+##           &lt;dbl&gt;
+## 1          1.27</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(sd(percent))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `sd(percent)`
+##           &lt;dbl&gt;
+## 1          23.3</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(sd(SATM))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `sd(SATM)`
+##        &lt;dbl&gt;
+## 1       34.1</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(sd(SATV))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `sd(SATV)`
+##        &lt;dbl&gt;
+## 1       30.8</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(sd(pop))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `sd(pop)`
+##       &lt;dbl&gt;
+## 1     5511.</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(sd(pvi_amount))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `sd(pvi_amount)`
+##              &lt;dbl&gt;
+## 1             11.6</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(var(pay))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `var(pay)`
+##        &lt;dbl&gt;
+## 1       24.8</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(var(dollars))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `var(dollars)`
+##            &lt;dbl&gt;
+## 1           1.61</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(var(percent))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `var(percent)`
+##            &lt;dbl&gt;
+## 1           543.</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(var(SATM))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `var(SATM)`
+##         &lt;dbl&gt;
+## 1       1161.</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(var(SATV))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `var(SATV)`
+##         &lt;dbl&gt;
+## 1        949.</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(var(pop))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `var(pop)`
+##        &lt;dbl&gt;
+## 1  30370600.</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(var(pvi_amount))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `var(pvi_amount)`
+##               &lt;dbl&gt;
+## 1              135.</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% count(pay)</code></pre>
+<pre><code>## # A tibble: 20 x 2
+##      pay     n
+##    &lt;dbl&gt; &lt;int&gt;
+##  1    22     1
+##  2    23     2
+##  3    24     2
+##  4    25     2
+##  5    26     5
+##  6    27     1
+##  7    28     6
+##  8    29     5
+##  9    30     2
+## 10    31     3
+## 11    32     6
+## 12    33     3
+## 13    34     1
+## 14    35     1
+## 15    36     2
+## 16    37     1
+## 17    38     3
+## 18    39     1
+## 19    42     1
+## 20    43     1</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% count(dollars)</code></pre>
+<pre><code>## # A tibble: 49 x 2
+##    dollars     n
+##      &lt;dbl&gt; &lt;int&gt;
+##  1    2.99     1
+##  2    3.2      1
+##  3    3.32     1
+##  4    3.33     1
+##  5    3.65     1
+##  6    3.68     1
+##  7    3.71     1
+##  8    3.73     1
+##  9    3.74     1
+## 10    4.01     1
+## # … with 39 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% count(percent)</code></pre>
+<pre><code>## # A tibble: 35 x 2
+##    percent     n
+##      &lt;dbl&gt; &lt;int&gt;
+##  1       4     1
+##  2       5     3
+##  3       6     2
+##  4       8     1
+##  5       9     2
+##  6      10     3
+##  7      11     1
+##  8      12     4
+##  9      13     1
+## 10      14     1
+## # … with 25 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% count(SATM)</code></pre>
+<pre><code>## # A tibble: 38 x 2
+##     SATM     n
+##    &lt;dbl&gt; &lt;int&gt;
+##  1   437     1
+##  2   440     1
+##  3   443     1
+##  4   459     1
+##  5   461     2
+##  6   463     2
+##  7   466     2
+##  8   470     3
+##  9   473     2
+## 10   476     1
+## # … with 28 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% count(SATV)</code></pre>
+<pre><code>## # A tibble: 41 x 2
+##     SATV     n
+##    &lt;dbl&gt; &lt;int&gt;
+##  1   397     1
+##  2   401     2
+##  3   404     1
+##  4   408     1
+##  5   412     1
+##  6   413     1
+##  7   418     2
+##  8   419     1
+##  9   420     1
+## 10   422     1
+## # … with 31 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% count(pop)</code></pre>
+<pre><code>## # A tibble: 49 x 2
+##      pop     n
+##    &lt;dbl&gt; &lt;int&gt;
+##  1   454     1
+##  2   550     1
+##  3   563     1
+##  4   639     1
+##  5   666     1
+##  6   696     1
+##  7   799     1
+##  8  1003     1
+##  9  1007     1
+## 10  1108     1
+## # … with 39 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% count(pvi_amount)</code></pre>
+<pre><code>## # A tibble: 28 x 2
+##    pvi_amount     n
+##         &lt;dbl&gt; &lt;int&gt;
+##  1          0     1
+##  2          1     5
+##  3          2     2
+##  4          5     3
+##  5          6     1
+##  6          7     2
+##  7          9     2
+##  8         12     2
+##  9         13     2
+## 10         14     1
+## # … with 18 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(quantile(pay))</code></pre>
+<pre><code>## # A tibble: 5 x 1
+##   `quantile(pay)`
+##             &lt;dbl&gt;
+## 1              22
+## 2              27
+## 3              30
+## 4              33
+## 5              43</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(quantile(dollars))</code></pre>
+<pre><code>## # A tibble: 5 x 1
+##   `quantile(dollars)`
+##                 &lt;dbl&gt;
+## 1                2.99
+## 2                4.33
+## 3                5.01
+## 4                5.50
+## 5                9.16</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(quantile(percent))</code></pre>
+<pre><code>## # A tibble: 5 x 1
+##   `quantile(percent)`
+##                 &lt;dbl&gt;
+## 1                   4
+## 2                  11
+## 3                  24
+## 4                  55
+## 5                  72</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(quantile(SATM))</code></pre>
+<pre><code>## # A tibble: 5 x 1
+##   `quantile(SATM)`
+##              &lt;dbl&gt;
+## 1              437
+## 2              470
+## 3              497
+## 4              523
+## 5              577</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(quantile(SATV))</code></pre>
+<pre><code>## # A tibble: 5 x 1
+##   `quantile(SATV)`
+##              &lt;dbl&gt;
+## 1              397
+## 2              423
+## 3              445
+## 4              476
+## 5              511</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(quantile(pop))</code></pre>
+<pre><code>## # A tibble: 5 x 1
+##   `quantile(pop)`
+##             &lt;dbl&gt;
+## 1             454
+## 2            1228
+## 3            3487
+## 4            6016
+## 5           29760</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(quantile(pvi_amount))</code></pre>
+<pre><code>## # A tibble: 5 x 1
+##   `quantile(pvi_amount)`
+##                    &lt;dbl&gt;
+## 1                      0
+## 2                      7
+## 3                     17
+## 4                     24
+## 5                     47</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(min(pay))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `min(pay)`
+##        &lt;dbl&gt;
+## 1         22</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(min(dollars))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `min(dollars)`
+##            &lt;dbl&gt;
+## 1           2.99</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(min(percent))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `min(percent)`
+##            &lt;dbl&gt;
+## 1              4</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(min(SATM))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `min(SATM)`
+##         &lt;dbl&gt;
+## 1         437</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(min(SATV))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `min(SATV)`
+##         &lt;dbl&gt;
+## 1         397</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(min(pop))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `min(pop)`
+##        &lt;dbl&gt;
+## 1        454</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(min(pvi_amount))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `min(pvi_amount)`
+##               &lt;dbl&gt;
+## 1                 0</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(max(pay))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `max(pay)`
+##        &lt;dbl&gt;
+## 1         43</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(max(dollars))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `max(dollars)`
+##            &lt;dbl&gt;
+## 1           9.16</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(max(percent))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `max(percent)`
+##            &lt;dbl&gt;
+## 1             72</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(max(SATM))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `max(SATM)`
+##         &lt;dbl&gt;
+## 1         577</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(max(SATV))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `max(SATV)`
+##         &lt;dbl&gt;
+## 1         511</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(max(pop))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `max(pop)`
+##        &lt;dbl&gt;
+## 1      29760</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(max(pvi_amount))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `max(pvi_amount)`
+##               &lt;dbl&gt;
+## 1                47</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(n_distinct(pay))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `n_distinct(pay)`
+##               &lt;int&gt;
+## 1                20</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(n_distinct(dollars))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `n_distinct(dollars)`
+##                   &lt;int&gt;
+## 1                    49</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(n_distinct(percent))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `n_distinct(percent)`
+##                   &lt;int&gt;
+## 1                    35</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(n_distinct(SATM))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `n_distinct(SATM)`
+##                &lt;int&gt;
+## 1                 38</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(n_distinct(SATV))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `n_distinct(SATV)`
+##                &lt;int&gt;
+## 1                 41</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(n_distinct(pop))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `n_distinct(pop)`
+##               &lt;int&gt;
+## 1                49</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% summarize(n_distinct(pvi_amount))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `n_distinct(pvi_amount)`
+##                      &lt;int&gt;
+## 1                       28</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(n_distinct(pay))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `n_distinct(pay)`
+##   &lt;chr&gt;              &lt;int&gt;
+## 1 ENC                    4
+## 2 ESC                    4
+## 3 MA                     3
+## 4 MTN                    6
+## 5 NE                     4
+## 6 PAC                    4
+## 7 SA                     7
+## 8 WNC                    6
+## 9 WSC                    4</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(n_distinct(dollars))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `n_distinct(dollars)`
+##   &lt;chr&gt;                  &lt;int&gt;
+## 1 ENC                        5
+## 2 ESC                        4
+## 3 MA                         3
+## 4 MTN                        8
+## 5 NE                         5
+## 6 PAC                        5
+## 7 SA                         8
+## 8 WNC                        7
+## 9 WSC                        4</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(n_distinct(percent))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `n_distinct(percent)`
+##   &lt;chr&gt;                  &lt;int&gt;
+## 1 ENC                        5
+## 2 ESC                        4
+## 3 MA                         3
+## 4 MTN                        8
+## 5 NE                         4
+## 6 PAC                        5
+## 7 SA                         7
+## 8 WNC                        5
+## 9 WSC                        3</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(n_distinct(SATM))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `n_distinct(SATM)`
+##   &lt;chr&gt;               &lt;int&gt;
+## 1 ENC                     5
+## 2 ESC                     4
+## 3 MA                      3
+## 4 MTN                     8
+## 5 NE                      5
+## 6 PAC                     4
+## 7 SA                      7
+## 8 WNC                     7
+## 9 WSC                     4</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(n_distinct(SATV))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `n_distinct(SATV)`
+##   &lt;chr&gt;               &lt;int&gt;
+## 1 ENC                     5
+## 2 ESC                     4
+## 3 MA                      3
+## 4 MTN                     8
+## 5 NE                      5
+## 6 PAC                     5
+## 7 SA                      7
+## 8 WNC                     7
+## 9 WSC                     4</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(n_distinct(pop))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `n_distinct(pop)`
+##   &lt;chr&gt;              &lt;int&gt;
+## 1 ENC                    5
+## 2 ESC                    4
+## 3 MA                     3
+## 4 MTN                    8
+## 5 NE                     5
+## 6 PAC                    5
+## 7 SA                     8
+## 8 WNC                    7
+## 9 WSC                    4</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(n_distinct(pvi_amount))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `n_distinct(pvi_amount)`
+##   &lt;chr&gt;                     &lt;int&gt;
+## 1 ENC                           4
+## 2 ESC                           4
+## 3 MA                            3
+## 4 MTN                           7
+## 5 NE                            5
+## 6 PAC                           5
+## 7 SA                            7
+## 8 WNC                           7
+## 9 WSC                           3</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(pay))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `mean(pay)`
+##   &lt;chr&gt;        &lt;dbl&gt;
+## 1 ENC           33.8
+## 2 ESC           27  
+## 3 MA            38.7
+## 4 MTN           28  
+## 5 NE            32.6
+## 6 PAC           35.8
+## 7 SA            30.9
+## 8 WNC           27  
+## 9 WSC           25.2</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(dollars))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `mean(dollars)`
+##   &lt;chr&gt;            &lt;dbl&gt;
+## 1 ENC               5.39
+## 2 ESC               3.77
+## 3 MA                8.06
+## 4 MTN               4.34
+## 5 NE                6.10
+## 6 PAC               5.61
+## 7 SA                5.22
+## 8 WNC               4.47
+## 9 WSC               3.83</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(percent))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `mean(percent)`
+##   &lt;chr&gt;            &lt;dbl&gt;
+## 1 ENC              23   
+## 2 ESC               8.5 
+## 3 MA               67.7 
+## 4 MTN              18   
+## 5 NE               64.6 
+## 6 PAC              46.4 
+## 7 SA               50   
+## 8 WNC               8.86
+## 9 WSC              16.5</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(SATM))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `mean(SATM)`
+##   &lt;chr&gt;         &lt;dbl&gt;
+## 1 ENC            509.
+## 2 ESC            520.
+## 3 MA             469.
+## 4 MTN            513.
+## 5 NE             470.
+## 6 PAC            482.
+## 7 SA             462.
+## 8 WNC            551.
+## 9 WSC            503</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(SATV))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `mean(SATV)`
+##   &lt;chr&gt;         &lt;dbl&gt;
+## 1 ENC            451.
+## 2 ESC            476.
+## 3 MA             417.
+## 4 MTN            462.
+## 5 NE             429 
+## 6 PAC            427.
+## 7 SA             418.
+## 8 WNC            493.
+## 9 WSC            459.</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(pop))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `mean(pop)`
+##   &lt;chr&gt;        &lt;dbl&gt;
+## 1 ENC          8402.
+## 2 ESC          3794 
+## 3 MA          12534 
+## 4 MTN          1707.
+## 5 NE           1984.
+## 6 PAC          7825.
+## 7 SA           5370.
+## 8 WNC          2523.
+## 9 WSC          6676</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(pvi_amount))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `mean(pvi_amount)`
+##   &lt;chr&gt;               &lt;dbl&gt;
+## 1 ENC                   8  
+## 2 ESC                  23.2
+## 3 MA                   12  
+## 4 MTN                  18.6
+## 5 NE                   17.2
+## 6 PAC                  19.2
+## 7 SA                   13.2
+## 8 WNC                  19.7
+## 9 WSC                  23</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(sd(pay))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `sd(pay)`
+##   &lt;chr&gt;      &lt;dbl&gt;
+## 1 ENC         2.49
+## 2 ESC         2.16
+## 3 MA          3.06
+## 4 MTN         2.83
+## 5 NE          3.78
+## 6 PAC         4.97
+## 7 SA          3.94
+## 8 WNC         3.74
+## 9 WSC         2.22</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(sd(dollars))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `sd(dollars)`
+##   &lt;chr&gt;          &lt;dbl&gt;
+## 1 ENC            0.391
+## 2 ESC            0.449
+## 3 MA             1.37 
+## 4 MTN            0.841
+## 5 NE             0.587
+## 6 PAC            1.28 
+## 7 SA             0.623
+## 8 WNC            0.609
+## 9 WSC            0.389</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(sd(percent))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `sd(percent)`
+##   &lt;chr&gt;          &lt;dbl&gt;
+## 1 ENC            17.9 
+## 2 ESC             3.42
+## 3 MA              3.21
+## 4 MTN             7.75
+## 5 NE              4.88
+## 6 PAC             4.04
+## 7 SA             14.9 
+## 8 WNC             3.58
+## 9 WSC            17.1</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(sd(SATM))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `sd(SATM)`
+##   &lt;chr&gt;       &lt;dbl&gt;
+## 1 ENC         32.2 
+## 2 ESC          4.57
+## 3 MA           5.13
+## 4 MTN         17.2 
+## 5 NE          10.1 
+## 6 PAC          3.90
+## 7 SA          19.5 
+## 8 WNC         17.4 
+## 9 WSC         28.4</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(sd(SATV))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `sd(SATV)`
+##   &lt;chr&gt;       &lt;dbl&gt;
+## 1 ENC         26.0 
+## 2 ESC          5.62
+## 3 MA           4.16
+## 4 MTN         18.4 
+## 5 NE           8.09
+## 6 PAC         15.5 
+## 7 SA          17.2 
+## 8 WNC         15.1 
+## 9 WSC         31.0</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(sd(pop))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `sd(pop)`
+##   &lt;chr&gt;      &lt;dbl&gt;
+## 1 ENC        3018.
+## 2 ESC         955.
+## 3 MA         5161.
+## 4 MTN        1167.
+## 5 NE         2268.
+## 6 PAC       12377.
+## 7 SA         3772.
+## 8 WNC        1732.
+## 9 WSC        6917.</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(sd(pvi_amount))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `sd(pvi_amount)`
+##   &lt;chr&gt;             &lt;dbl&gt;
+## 1 ENC                7.48
+## 2 ESC                5.91
+## 3 MA                10.5 
+## 4 MTN               17.2 
+## 5 NE                12.7 
+## 6 PAC               10.9 
+## 7 SA                10.0 
+## 8 WNC               11.8 
+## 9 WSC                8.04</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(var(pay))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `var(pay)`
+##   &lt;chr&gt;       &lt;dbl&gt;
+## 1 ENC          6.2 
+## 2 ESC          4.67
+## 3 MA           9.33
+## 4 MTN          8   
+## 5 NE          14.3 
+## 6 PAC         24.7 
+## 7 SA          15.6 
+## 8 WNC         14   
+## 9 WSC          4.92</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(var(dollars))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `var(dollars)`
+##   &lt;chr&gt;           &lt;dbl&gt;
+## 1 ENC             0.153
+## 2 ESC             0.201
+## 3 MA              1.87 
+## 4 MTN             0.708
+## 5 NE              0.345
+## 6 PAC             1.65 
+## 7 SA              0.388
+## 8 WNC             0.371
+## 9 WSC             0.151</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(var(percent))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `var(percent)`
+##   &lt;chr&gt;           &lt;dbl&gt;
+## 1 ENC             319  
+## 2 ESC              11.7
+## 3 MA               10.3
+## 4 MTN              60  
+## 5 NE               23.8
+## 6 PAC              16.3
+## 7 SA              223. 
+## 8 WNC              12.8
+## 9 WSC             291</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(var(SATM))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `var(SATM)`
+##   &lt;chr&gt;        &lt;dbl&gt;
+## 1 ENC         1035. 
+## 2 ESC           20.9
+## 3 MA            26.3
+## 4 MTN          294. 
+## 5 NE           103. 
+## 6 PAC           15.2
+## 7 SA           379. 
+## 8 WNC          303. 
+## 9 WSC          808</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(var(SATV))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `var(SATV)`
+##   &lt;chr&gt;        &lt;dbl&gt;
+## 1 ENC          677. 
+## 2 ESC           31.6
+## 3 MA            17.3
+## 4 MTN          338. 
+## 5 NE            65.5
+## 6 PAC          239. 
+## 7 SA           294. 
+## 8 WNC          229. 
+## 9 WSC          962.</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(var(pop))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `var(pop)`
+##   &lt;chr&gt;       &lt;dbl&gt;
+## 1 ENC      9109645.
+## 2 ESC       912207.
+## 3 MA      26635728 
+## 4 MTN      1361279.
+## 5 NE       5143947.
+## 6 PAC    153191998.
+## 7 SA      14224288.
+## 8 WNC      3000948.
+## 9 WSC     47838394</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(var(pvi_amount))</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   region `var(pvi_amount)`
+##   &lt;chr&gt;              &lt;dbl&gt;
+## 1 ENC                 56  
+## 2 ESC                 34.9
+## 3 MA                 111  
+## 4 MTN                297. 
+## 5 NE                 161. 
+## 6 PAC                120. 
+## 7 SA                 100. 
+## 8 WNC                139. 
+## 9 WSC                 64.7</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    count(pay)</code></pre>
+<pre><code>## # A tibble: 42 x 3
+## # Groups:   region [9]
+##    region   pay     n
+##    &lt;chr&gt;  &lt;dbl&gt; &lt;int&gt;
+##  1 ENC       32     2
+##  2 ENC       33     1
+##  3 ENC       34     1
+##  4 ENC       38     1
+##  5 ESC       24     1
+##  6 ESC       27     1
+##  7 ESC       28     1
+##  8 ESC       29     1
+##  9 MA        36     1
+## 10 MA        38     1
+## # … with 32 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    count(dollars)</code></pre>
+<pre><code>## # A tibble: 49 x 3
+## # Groups:   region [9]
+##    region dollars     n
+##    &lt;chr&gt;    &lt;dbl&gt; &lt;int&gt;
+##  1 ENC       5.05     1
+##  2 ENC       5.06     1
+##  3 ENC       5.26     1
+##  4 ENC       5.64     1
+##  5 ENC       5.95     1
+##  6 ESC       3.32     1
+##  7 ESC       3.65     1
+##  8 ESC       3.71     1
+##  9 ESC       4.39     1
+## 10 MA        6.53     1
+## # … with 39 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    count(percent)</code></pre>
+<pre><code>## # A tibble: 44 x 3
+## # Groups:   region [9]
+##    region percent     n
+##    &lt;chr&gt;    &lt;dbl&gt; &lt;int&gt;
+##  1 ENC         11     1
+##  2 ENC         12     1
+##  3 ENC         16     1
+##  4 ENC         22     1
+##  5 ENC         54     1
+##  6 ESC          4     1
+##  7 ESC          8     1
+##  8 ESC         10     1
+##  9 ESC         12     1
+## 10 MA          64     1
+## # … with 34 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    count(SATM)</code></pre>
+<pre><code>## # A tibble: 47 x 3
+## # Groups:   region [9]
+##    region  SATM     n
+##    &lt;chr&gt;  &lt;dbl&gt; &lt;int&gt;
+##  1 ENC      459     1
+##  2 ENC      499     1
+##  3 ENC      514     1
+##  4 ENC      528     1
+##  5 ENC      543     1
+##  6 ESC      514     1
+##  7 ESC      519     1
+##  8 ESC      521     1
+##  9 ESC      525     1
+## 10 MA       463     1
+## # … with 37 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    count(SATV)</code></pre>
+<pre><code>## # A tibble: 48 x 3
+## # Groups:   region [9]
+##    region  SATV     n
+##    &lt;chr&gt;  &lt;dbl&gt; &lt;int&gt;
+##  1 ENC      408     1
+##  2 ENC      450     1
+##  3 ENC      454     1
+##  4 ENC      466     1
+##  5 ENC      476     1
+##  6 ESC      470     1
+##  7 ESC      473     1
+##  8 ESC      477     1
+##  9 ESC      483     1
+## 10 MA       412     1
+## # … with 38 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    count(pop)</code></pre>
+<pre><code>## # A tibble: 49 x 3
+## # Groups:   region [9]
+##    region   pop     n
+##    &lt;chr&gt;  &lt;dbl&gt; &lt;int&gt;
+##  1 ENC     4892     1
+##  2 ENC     5544     1
+##  3 ENC     9295     1
+##  4 ENC    10847     1
+##  5 ENC    11431     1
+##  6 ESC     2573     1
+##  7 ESC     3685     1
+##  8 ESC     4041     1
+##  9 ESC     4877     1
+## 10 MA      7730     1
+## # … with 39 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    count(pvi_amount)</code></pre>
+<pre><code>## # A tibble: 45 x 3
+## # Groups:   region [9]
+##    region pvi_amount     n
+##    &lt;chr&gt;       &lt;dbl&gt; &lt;int&gt;
+##  1 ENC             1     2
+##  2 ENC             7     1
+##  3 ENC            13     1
+##  4 ENC            18     1
+##  5 ESC            15     1
+##  6 ESC            23     1
+##  7 ESC            27     1
+##  8 ESC            28     1
+##  9 MA              1     1
+## 10 MA             13     1
+## # … with 35 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(pvi_party, region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(pay))</code></pre>
+<pre><code>## # A tibble: 16 x 3
+## # Groups:   pvi_party [2]
+##    pvi_party region `mean(pay)`
+##    &lt;chr&gt;     &lt;chr&gt;        &lt;dbl&gt;
+##  1 D         ENC           36  
+##  2 D         MA            40  
+##  3 D         MTN           28.5
+##  4 D         NE            33  
+##  5 D         PAC           34  
+##  6 D         SA            35  
+##  7 D         WNC           33  
+##  8 R         ENC           32.3
+##  9 R         ESC           27  
+## 10 R         MA            36  
+## 11 R         MTN           27.8
+## 12 R         NE            31  
+## 13 R         PAC           43  
+## 14 R         SA            28.4
+## 15 R         WNC           26  
+## 16 R         WSC           25.2</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(pvi_party, region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(dollars))</code></pre>
+<pre><code>## # A tibble: 16 x 3
+## # Groups:   pvi_party [2]
+##    pvi_party region `mean(dollars)`
+##    &lt;chr&gt;     &lt;chr&gt;            &lt;dbl&gt;
+##  1 D         ENC               5.16
+##  2 D         MA                8.83
+##  3 D         MTN               4.63
+##  4 D         NE                6.24
+##  5 D         PAC               5.04
+##  6 D         SA                5.85
+##  7 D         WNC               5.26
+##  8 R         ENC               5.55
+##  9 R         ESC               3.77
+## 10 R         MA                6.53
+## 11 R         MTN               4.24
+## 12 R         NE                5.50
+## 13 R         PAC               7.89
+## 14 R         SA                4.84
+## 15 R         WNC               4.34
+## 16 R         WSC               3.83</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(pvi_party, region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(percent))</code></pre>
+<pre><code>## # A tibble: 16 x 3
+## # Groups:   pvi_party [2]
+##    pvi_party region `mean(percent)`
+##    &lt;chr&gt;     &lt;chr&gt;            &lt;dbl&gt;
+##  1 D         ENC               14  
+##  2 D         MA                69.5
+##  3 D         MTN               20  
+##  4 D         NE                64  
+##  5 D         PAC               47.5
+##  6 D         SA                58.3
+##  7 D         WNC               14  
+##  8 R         ENC               29  
+##  9 R         ESC                8.5
+## 10 R         MA                64  
+## 11 R         MTN               17.3
+## 12 R         NE                67  
+## 13 R         PAC               42  
+## 14 R         SA                45  
+## 15 R         WNC                8  
+## 16 R         WSC               16.5</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(pvi_party, region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(SATM))</code></pre>
+<pre><code>## # A tibble: 16 x 3
+## # Groups:   pvi_party [2]
+##    pvi_party region `mean(SATM)`
+##    &lt;chr&gt;     &lt;chr&gt;         &lt;dbl&gt;
+##  1 D         ENC            521 
+##  2 D         MA             472.
+##  3 D         MTN            520 
+##  4 D         NE             466.
+##  5 D         PAC            484.
+##  6 D         SA             473.
+##  7 D         WNC            542 
+##  8 R         ENC            500.
+##  9 R         ESC            520.
+## 10 R         MA             463 
+## 11 R         MTN            511.
+## 12 R         NE             486 
+## 13 R         PAC            476 
+## 14 R         SA             455.
+## 15 R         WNC            552 
+## 16 R         WSC            503</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(pvi_party, region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(SATV))</code></pre>
+<pre><code>## # A tibble: 16 x 3
+## # Groups:   pvi_party [2]
+##    pvi_party region `mean(SATV)`
+##    &lt;chr&gt;     &lt;chr&gt;         &lt;dbl&gt;
+##  1 D         ENC            460 
+##  2 D         MA             415 
+##  3 D         MTN            468 
+##  4 D         NE             426.
+##  5 D         PAC            425.
+##  6 D         SA             429.
+##  7 D         WNC            477 
+##  8 R         ENC            445.
+##  9 R         ESC            476.
+## 10 R         MA             420 
+## 11 R         MTN            460.
+## 12 R         NE             442 
+## 13 R         PAC            438 
+## 14 R         SA             412 
+## 15 R         WNC            495.
+## 16 R         WSC            459.</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(pvi_party, region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(pop))</code></pre>
+<pre><code>## # A tibble: 16 x 3
+## # Groups:   pvi_party [2]
+##    pvi_party region `mean(pop)`
+##    &lt;chr&gt;     &lt;chr&gt;        &lt;dbl&gt;
+##  1 D         ENC         10363 
+##  2 D         MA          12860 
+##  3 D         MTN          2404.
+##  4 D         NE           2202.
+##  5 D         PAC          9644.
+##  6 D         SA           3878 
+##  7 D         WNC          4375 
+##  8 R         ENC          7094.
+##  9 R         ESC          3794 
+## 10 R         MA          11882 
+## 11 R         MTN          1475 
+## 12 R         NE           1109 
+## 13 R         PAC           550 
+## 14 R         SA           6265 
+## 15 R         WNC          2214.
+## 16 R         WSC          6676</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(pvi_party, region) %&gt;% na.omit %&gt;% select_if(is.numeric) %&gt;% 
+    summarize(mean(pvi_amount))</code></pre>
+<pre><code>## # A tibble: 16 x 3
+## # Groups:   pvi_party [2]
+##    pvi_party region `mean(pvi_amount)`
+##    &lt;chr&gt;     &lt;chr&gt;               &lt;dbl&gt;
+##  1 D         ENC                  7   
+##  2 D         MA                  17.5 
+##  3 D         MTN                  4   
+##  4 D         NE                  21   
+##  5 D         PAC                 20.2 
+##  6 D         SA                  12.3 
+##  7 D         WNC                  2   
+##  8 R         ENC                  8.67
+##  9 R         ESC                 23.2 
+## 10 R         MA                   1   
+## 11 R         MTN                 23.5 
+## 12 R         NE                   2   
+## 13 R         PAC                 15   
+## 14 R         SA                  13.8 
+## 15 R         WNC                 22.7 
+## 16 R         WSC                 23</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% count()</code></pre>
+<pre><code>## # A tibble: 10 x 2
+## # Groups:   region [10]
+##    region     n
+##    &lt;chr&gt;  &lt;int&gt;
+##  1 ENC        5
+##  2 ESC        4
+##  3 MA         3
+##  4 MTN        8
+##  5 NE         6
+##  6 PAC        5
+##  7 SA         9
+##  8 WNC        7
+##  9 WSC        4
+## 10 &lt;NA&gt;       1</code></pre>
+<pre class="r"><code>edu %&gt;% filter(pvi_party == &quot;R&quot;) %&gt;% summarize(max(dollars))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `max(dollars)`
+##            &lt;dbl&gt;
+## 1           7.89</code></pre>
+<pre class="r"><code>edu %&gt;% filter(pvi_party == &quot;R&quot;) %&gt;% summarize(min(dollars))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   `min(dollars)`
+##            &lt;dbl&gt;
+## 1           2.99</code></pre>
+<pre class="r"><code>edu %&gt;% select_if(is.numeric) %&gt;% cor(use = &quot;pair&quot;)</code></pre>
+<pre><code>##            pvi_amount        pop       SATV       SATM    percent    dollars
+## pvi_amount  1.0000000 -0.1718908  0.2097696  0.1913451 -0.2188631 -0.2499034
+## pop        -0.1718908  1.0000000 -0.3381028 -0.2300418  0.2100687  0.1436745
+## SATV        0.2097696 -0.3381028  1.0000000  0.9620359 -0.8627954 -0.5268313
+## SATM        0.1913451 -0.2300418  0.9620359  1.0000000 -0.8581495 -0.4844477
+## percent    -0.2188631  0.2100687 -0.8627954 -0.8581495  1.0000000  0.7111474
+## dollars    -0.2499034  0.1436745 -0.5268313 -0.4844477  0.7111474  1.0000000
+## pay        -0.2899248  0.3677244 -0.5559238 -0.4853306  0.6630098  0.8476737
+##                   pay
+## pvi_amount -0.2899248
+## pop         0.3677244
+## SATV       -0.5559238
+## SATM       -0.4853306
+## percent     0.6630098
+## dollars     0.8476737
+## pay         1.0000000</code></pre>
+<pre class="r"><code>edu %&gt;% filter(region == &quot;ESC&quot;) %&gt;% select(state)</code></pre>
+<pre><code>## # A tibble: 4 x 1
+##   state      
+##   &lt;chr&gt;      
+## 1 Alabama    
+## 2 Kentucky   
+## 3 Mississippi
+## 4 Tennessee</code></pre>
+<pre class="r"><code>edu %&gt;% select(state, dollars) %&gt;% arrange(desc(dollars))</code></pre>
+<pre><code>## # A tibble: 52 x 2
+##    state                dollars
+##    &lt;chr&gt;                  &lt;dbl&gt;
+##  1 New Jersey              9.16
+##  2 New York                8.5 
+##  3 District of Columbia    8.21
+##  4 &lt;NA&gt;                    7.91
+##  5 Alaska                  7.89
+##  6 Rhode Island            6.99
+##  7 Pennsylvania            6.53
+##  8 Massachusetts           6.35
+##  9 Maryland                6.18
+## 10 Delaware                6.02
+## # … with 42 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% select(state, dollars) %&gt;% arrange(dollars)</code></pre>
+<pre><code>## # A tibble: 52 x 2
+##    state        dollars
+##    &lt;chr&gt;          &lt;dbl&gt;
+##  1 Utah            2.99
+##  2 Idaho           3.2 
+##  3 Mississippi     3.32
+##  4 Arkansas        3.33
+##  5 Alabama         3.65
+##  6 North Dakota    3.68
+##  7 Tennessee       3.71
+##  8 South Dakota    3.73
+##  9 Oklahoma        3.74
+## 10 Louisiana       4.01
+## # … with 42 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(region) %&gt;% mutate(region_salary = mean(pay))</code></pre>
+<pre><code>## # A tibble: 52 x 13
+## # Groups:   region [10]
+##    state pvi_party pvi_amount Abbrev Code  region   pop  SATV  SATM percent
+##    &lt;chr&gt; &lt;chr&gt;          &lt;dbl&gt; &lt;fct&gt;  &lt;chr&gt; &lt;chr&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+##  1 Alab… R                 27 Ala.   AL    ESC     4041   470   514       8
+##  2 Alas… R                 15 Alaska AK    PAC      550   438   476      42
+##  3 Ariz… R                  9 Ariz.  AZ    MTN     3665   445   497      25
+##  4 Arka… R                 24 Ark.   AR    WSC     2351   470   511       6
+##  5 Cali… D                 24 Calif. CA    PAC    29760   419   484      45
+##  6 Colo… D                  1 Colo.  CO    MTN     3294   456   513      28
+##  7 Conn… D                 11 Conn.  CT    &lt;NA&gt;      NA    NA    NA      NA
+##  8 Dela… D                 14 Del.   DE    SA       666   433   470      58
+##  9 Flor… R                  5 Fla.   FL    SA     12938   418   466      44
+## 10 Geor… R                 12 Ga.    GA    SA      6478   401   443      57
+## # … with 42 more rows, and 3 more variables: dollars &lt;dbl&gt;, pay &lt;dbl&gt;,
+## #   region_salary &lt;dbl&gt;</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% group_by(pvi_party) %&gt;% mutate(party_salary = mean(pay)) %&gt;% 
+    select(pvi_party, party_salary)</code></pre>
+<pre><code>## # A tibble: 49 x 2
+## # Groups:   pvi_party [2]
+##    pvi_party party_salary
+##    &lt;chr&gt;            &lt;dbl&gt;
+##  1 R                 28.4
+##  2 R                 28.4
+##  3 R                 28.4
+##  4 R                 28.4
+##  5 D                 34.2
+##  6 D                 34.2
+##  7 D                 34.2
+##  8 R                 28.4
+##  9 R                 28.4
+## 10 D                 34.2
+## # … with 39 more rows</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% as.data.frame %&gt;% group_by(pvi_party) %&gt;% 
+    select_if(is.numeric) %&gt;% summarize(min(dollars))</code></pre>
+<pre><code>## # A tibble: 2 x 2
+##   pvi_party `min(dollars)`
+##   &lt;chr&gt;              &lt;dbl&gt;
+## 1 D                   4.45
+## 2 R                   2.99</code></pre>
+<pre class="r"><code>edu %&gt;% na.omit %&gt;% as.data.frame %&gt;% group_by(pvi_party) %&gt;% 
+    select_if(is.numeric) %&gt;% summarize(max(dollars))</code></pre>
+<pre><code>## # A tibble: 2 x 2
+##   pvi_party `max(dollars)`
+##   &lt;chr&gt;              &lt;dbl&gt;
+## 1 D                   9.16
+## 2 R                   7.89</code></pre>
+<pre class="r"><code>edu %&gt;% group_by(pvi_party) %&gt;% count()</code></pre>
+<pre><code>## # A tibble: 3 x 2
+## # Groups:   pvi_party [3]
+##   pvi_party     n
+##   &lt;chr&gt;     &lt;int&gt;
+## 1 D            19
+## 2 R            31
+## 3 &lt;NA&gt;          2</code></pre>
+<pre class="r"><code>NAcount &lt;- function(x) sum(is.na(x))
+edu %&gt;% summarize_all(NAcount)</code></pre>
+<pre><code>## # A tibble: 1 x 12
+##   state pvi_party pvi_amount Abbrev  Code region   pop  SATV  SATM percent
+##   &lt;int&gt;     &lt;int&gt;      &lt;int&gt;  &lt;int&gt; &lt;int&gt;  &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;   &lt;int&gt;
+## 1     1         2          2      1     0      1     1     1     1       1
+## # … with 2 more variables: dollars &lt;int&gt;, pay &lt;int&gt;</code></pre>
+<p>Here you see a plethora of summary statistics for the numeric variables. The functions sd (standard deviation), count, n_distinct (distinct counts), var (variance), quantile, max, and min were applied to pay, dollars, percent, SATM, SATV, pop, and pvi_amount before and after grouping region and then political party and region. These variables stand for pop (population in 1,000s), SATV (average score of graduating high-school students in the state on the verbal component of the SAT), SATM (average score of graduating high-school students in the state on the math component of the SAT), percent (percent of graduating high school students in the state who took the SAT exam), dollars (state spending on public education, in $1,000s per student), pay (average teacher's salary in the state, in $1000s), and the pvi_amount (the Cook Partisan Voting Index of the vote). Also, fun statistics were found based on questions I had about my own data during this project which use the six core dplyr functions (filter, select, arrange, group_by, mutate, summarize).</p>
+<p>Some interesting statistics from this inquiry are that New Jersey invests the most in public education with an allocated $9,159 per student. Alternatively, Utah invests the least in public education with an allocated $2,993 per student. Also, democratic states pay teachers an average of $34,167 while republican states, on average, pay $28,419. Further, the cor function depicts correlations with every numeric variable to one another.</p>
+</div>
+<div id="visualizing" class="section level3">
+<h3>4. Visualizing</h3>
+<pre class="r"><code>educor &lt;- edu %&gt;% select_if(is.numeric) %&gt;% cor(use = &quot;pair&quot;)
+tidyedu &lt;- educor %&gt;% as.data.frame %&gt;% rownames_to_column(&quot;var1&quot;) %&gt;% 
+    pivot_longer(-1, names_to = &quot;var2&quot;, values_to = &quot;correlation&quot;)
+
+tidyedu %&gt;% ggplot(aes(var1, var2, fill = correlation)) + geom_tile() + 
+    xlab(&quot;&quot;) + ylab(&quot;&quot;) + scale_fill_gradient2(low = &quot;coral&quot;, 
+    mid = &quot;white&quot;, high = &quot;cornflowerblue&quot;) + geom_text(aes(label = round(correlation, 
+    2)), color = &quot;black&quot;, size = 4) + theme(axis.text.x = element_text(angle = 90, 
+    hjust = 1)) + coord_fixed()</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Above is a heatmap of my numeric variables. The strength of the correlation between two variables is shown by the gradient. Of course, a variable when compared to itself will be entirely related as is seen by the 1's on the map. Further, some interesting insights from the graph include that population of the state has a very low correlation to dollars spent on public education per child. SAT verbal scores for students is directly related (0.96) to the students' SAT math score which is not unsurprising. Entirely unrelated (-0.86) are the SAT scores to percent of graduating high school students in the state who took the SAT exam. However, one of the most interesting correlations is that percent of graduating high school students in the state fairly relates to the amount of dollars invested in public education per child.</p>
+<pre class="r"><code>ggplot(edu, aes(x = pvi_party, fill = region)) + geom_bar(position = &quot;fill&quot;) + 
+    xlab(&quot;Political Party&quot;) + ylab(&quot;Percent&quot;) + ggtitle(&quot;Regional Partisan Makeup  of the US&quot;) + 
+    scale_fill_brewer(palette = &quot;PuRd&quot;)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>This percent stacked barplot shows the percentages of the political parties of states in each region of the United States of America. From this plot we can tell that the Mountain region (Arizona, Colorado, Idaho, Montana, Nevada, New Mexico, Utah and Wyoming) is mostly Republican leaning states. However, the Pacific region (Alaska, California, Hawaii, Oregon, and Washington) is mostly democratic. Unsurprisingly, the WSC region (Arkansas, Louisiana, Oklahoma, and Texas) is entirely republican. The regions least contributing to the Republican party's percentage of the US are New England, the Mid-Atlantic, and the Pacific regions. The region contributing least to the percentage of Democratic states is the WNC region (Iowa, Kansas, Minnesota, Missouri, Nebraska, North Dakota, and South Dakota).</p>
+<pre class="r"><code>ggplot(edu, aes(x = region, y = dollars, fill = pvi_party)) + 
+    geom_bar(stat = &quot;summary&quot;, position = &quot;dodge&quot;) + scale_fill_manual(values = c(R = &quot;darkred&quot;, 
+    D = &quot;darkblue&quot;)) + xlab(&quot;Region of the US&quot;) + scale_y_continuous(breaks = seq(0, 
+    9, 0.5), name = &quot;Avg. State Spending on Public Education (in $1,000s per student)&quot;) + 
+    ggtitle(&quot;State Spending on Public Education v Region by Political Parties&quot;)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>The graph above depicts the average state spending on public education by region and political party. The highest average investment in education comes from democratic states in the Mid-Atlantic region of the US. This is followed by the republican state in the Pacific region (Alaska). The lowest average investment in education is by republican states in the ESC region (Alabama, Kentucky, Mississippi, and Tennessee) followed closely by republican states in the WSC region (Arkansas, Louisiana, Oklahoma, and Texas). Knowledge of this data could impact residents of these states if they are worried about the allocated funds for their children's education/future.</p>
+<pre class="r"><code>ggplot(data = edu, aes(x = pay, y = percent, color = pvi_party)) + 
+    geom_point(size = 3) + geom_line(aes(group = pvi_party)) + 
+    theme_minimal() + scale_x_continuous(breaks = seq(0, 50, 
+    5), name = &quot;Average Teacher&#39;s Salary per State (in $1000s)&quot;) + 
+    scale_y_continuous(breaks = seq(0, 80, 10), name = &quot;% of Graduating High School Seniors Who Took the SAT Exam&quot;) + 
+    ggtitle(&quot;Percent of Graduating Seniors v Average Teacher&#39;s Salary by Political Party&quot;)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>The plot above displays the relationship between average teacher's salary per state in the US and the percentage of graduating seniors who took the SAT. The distinction that these seniors have taken the SAT illuminates they plan on continuing their education. The graph shows that both political parties follow similar trends and that overall, a higher teacher's salary does tend to correlate to a higher percentage of students taking the SAT. This may mean that investing in teachers will help them give more time to their students (as many work multiple jobs just to survive) which will then translate to students taking greater concern in their own futures and seeing the benefit of education. As there are more republican leaning states, we see more teal colored dots on the graph. The graph shows that democratic states pay teacher's above $25,000, while 6 republican states pay teachers equal or less than $25,000. Except for one instance, a teacher's salary above $35,000 results in at least 40% of graduating seniors taking their SATs.</p>
+</div>
+<div id="dimensionality-reduction" class="section level3">
+<h3>5. Dimensionality Reduction</h3>
+<pre class="r"><code>edu1 &lt;- edu %&gt;% select(&quot;percent&quot;, &quot;dollars&quot;, &quot;pay&quot;) %&gt;% na.omit
+edu_2 &lt;- edu1 %&gt;% mutate_if(is.character, as.factor)
+gower_edu &lt;- daisy(edu_2, metric = &quot;gower&quot;)
+
+sil_width &lt;- vector()
+for (i in 2:10) {
+    pam_fit &lt;- pam(gower_edu, k = i)
+    sil_width[i] &lt;- pam_fit$silinfo$avg.width
+}
+ggplot() + geom_line(aes(x = 1:10, y = sil_width)) + scale_x_continuous(name = &quot;k&quot;, 
+    breaks = 1:10)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>pam2 &lt;- pam(gower_edu, k = 2, diss = T)
+pam2</code></pre>
+<pre><code>## Medoids:
+##      ID   
+## [1,] 24 24
+## [2,]  7  7
+## Clustering vector:
+##  [1] 1 2 1 1 2 1 2 2 2 2 1 1 2 1 1 1 1 2 2 2 1 1 1 1 1 1 1 2 2 1 2 2 1 1 1 2 2 2
+## [39] 1 1 1 1 1 2 2 2 1 1 1 2 2
+## Objective function:
+##     build      swap 
+## 0.1634676 0.1316711 
+## 
+## Available components:
+## [1] &quot;medoids&quot;    &quot;id.med&quot;     &quot;clustering&quot; &quot;objective&quot;  &quot;isolation&quot; 
+## [6] &quot;clusinfo&quot;   &quot;silinfo&quot;    &quot;diss&quot;       &quot;call&quot;</code></pre>
+<pre class="r"><code>plot(pam2, which = 2)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(pam2, which = 1)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>The graph of silhouette width (silhouette width v k) shows that the data should be clustered in two groups given the high silhouette with at k=2. A higher silhouette width is optimal because this means the data is more cohesive. Clustering began with choosing 3 numeric variables for which we computed Gower dissimilarities. I chose percent (percent of graduating high school students in the state who took the SAT exam), dollars (state spending on public education, in $1,000s per student), and pay (average teacher's salary in the state, in $1000s). The Gower dissimilarities were used to cluster with PAM. The silhouette plot of PAM shows us that a reasonable structure has been found as the average silhouette width (0.52) falls between 0.51 and 0.70! The final plot shows the two clusters generated through this process and shows that they explain 51.06% of point variability or, in other words, roughly half of the data on these three variables is depicted by this plot.</p>
+</div>
+</div>
+
+            
+        <hr>         <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div> 
+            </div>
+          </div>
+
+   <hr>  <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div> 
+        </div>
+      </div>
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="../../js/docs.min.js"></script>
+<script src="../../js/main.js"></script>
+
+<script src="../../js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>
