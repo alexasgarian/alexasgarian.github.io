@@ -18,12 +18,13 @@ Data Wrangling and Data Exploration library(tidyverse) library(ggplot2) library(
     </item>
     
     <item>
-      <title>Project 2</title>
+      <title>Project 2: Modeling, Testing, and Predicting</title>
       <link>/project/project2/</link>
-      <pubDate>Tue, 01 Dec 2020 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 11 Dec 2020 00:00:00 +0000</pubDate>
       
       <guid>/project/project2/</guid>
-      <description> Test Project 2  </description>
+      <description>0. Introduce your dataset and each of your variables (or just your main variables if you have lots) in a paragraph. What are they measuring? How many observations?
+My dataset is a compilation of two datasets from the server. The first, originally called &amp;quot;education&amp;quot;, was from the carData package (originally labeled &amp;quot;States&amp;quot;) and my second was called &amp;quot;partisan_lean_state&amp;quot; from the fivethirtyeight package. I also used stateabbr from the server to help combine the two packages on the basis of state.</description>
     </item>
     
   </channel>

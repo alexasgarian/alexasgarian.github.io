@@ -18,6 +18,16 @@ Data Wrangling and Data Exploration library(tidyverse) library(ggplot2) library(
     </item>
     
     <item>
+      <title>Project 2: Modeling, Testing, and Predicting</title>
+      <link>/project/project2/</link>
+      <pubDate>Fri, 11 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project2/</guid>
+      <description>0. Introduce your dataset and each of your variables (or just your main variables if you have lots) in a paragraph. What are they measuring? How many observations?
+My dataset is a compilation of two datasets from the server. The first, originally called &amp;quot;education&amp;quot;, was from the carData package (originally labeled &amp;quot;States&amp;quot;) and my second was called &amp;quot;partisan_lean_state&amp;quot; from the fivethirtyeight package. I also used stateabbr from the server to help combine the two packages on the basis of state.</description>
+    </item>
+    
+    <item>
       <title>Test Post</title>
       <link>/post/2020/12/11/test-post/</link>
       <pubDate>Fri, 11 Dec 2020 00:00:00 +0000</pubDate>
@@ -26,15 +36,6 @@ Data Wrangling and Data Exploration library(tidyverse) library(ggplot2) library(
       <description> Heading of my post! Content of my post!
 Subheading More content
 quakes &amp;lt;- quakes r.quakes.mag.mean() ## 4.6204000000000001     </description>
-    </item>
-    
-    <item>
-      <title>Project 2</title>
-      <link>/project/project2/</link>
-      <pubDate>Tue, 01 Dec 2020 00:00:00 +0000</pubDate>
-      
-      <guid>/project/project2/</guid>
-      <description> Test Project 2  </description>
     </item>
     
     <item>

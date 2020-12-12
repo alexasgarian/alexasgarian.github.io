@@ -1,8 +1,341 @@
 ---
-title: "Project 2"
-author: "Me"
-date: "2020-12-01"
-output: html_document
+title: 'Project 2: Modeling, Testing, and Predicting'
+author: "SDS348"
+date: '2020-12-11'
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
 ---
 
-## Test Project 2
+```{r setup, include=FALSE}
+library(knitr)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = knitr:::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE,fig.align="center",warning=FALSE,message=FALSE,fig.width=8, fig.height=5, linewidth=60)
+options(tibble.width = 100,width = 100)
+library(tidyverse); library(ggplot2); library(GGally); library(cluster); library(glmnet); library(dplyr); library(sandwich) ; library(emmeans)
+library(lmtest); library(plotROC); library(rstatix)
+partisan_lean_state <- read_csv("partisan_lean_state.csv")
+education <- read_csv("education.csv")
+stateabbr <- read.csv("stateabbr.csv")
+partisan_lean_state -> partisan
+education1 <- full_join(stateabbr, education, by= c("Code"="State"))
+edu <- full_join(partisan, education1, by= c("state"="State"))
+edu <- edu %>% select(-Abbrev)
+edu <-edu %>% select(-Code)
+Edu <- edu %>% mutate(Democratic=ifelse(pvi_party=="D",1,0))
+column_order <- c("state","region", "pvi_party", "Democratic", "pvi_amount", "pop", "dollars", "pay", "percent", "SATV", "SATM")
+Edu <- Edu[,column_order]
+Edu1 <- Edu %>% na.omit 
+
+#HERE'S THE CLASSIFICAITON DIAGNOSTICS FUNCTION
+class_diag<-function(probs,truth){
+  tab<-table(factor(probs>.5,levels=c("FALSE","TRUE")),factor(truth,levels=c("FALSE","TRUE")))
+  acc=sum(diag(tab))/sum(tab)
+  sens=tab[2,2]/colSums(tab)[2]
+  spec=tab[1,1]/colSums(tab)[1]
+  ppv=tab[2,2]/rowSums(tab)[2]
+  f1=2*(sens*ppv)/(sens+ppv)
+
+  if(is.numeric(truth)==FALSE & is.logical(truth)==FALSE){
+    truth<-as.numeric(truth)-1}
+  
+  #CALCULATE EXACT AUC
+  ord<-order(probs, decreasing=TRUE)
+  probs <- probs[ord]; truth <- truth[ord]
+  
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  
+  dup<-c(probs[-1]>=probs[-length(probs)], FALSE)
+  TPR<-c(0,TPR[!dup],1); FPR<-c(0,FPR[!dup],1)
+  
+  n <- length(TPR)
+  auc<- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+
+  data.frame(acc,sens,spec,ppv,f1,auc)
+}
+```
+
+
+##0. 
+Introduce your dataset and each of your variables (or just your main variables if you have lots) in a paragraph. What are they measuring? How many observations?
+
+My dataset is a compilation of two datasets from the server. The first, originally called "education", was from the carData package (originally labeled "States") and my second was called "partisan_lean_state" from the fivethirtyeight package. I also used stateabbr from the server to help combine the two packages on the basis of state. The variables in "education" are state, region (U.S. Census region), pop (population in 1,000s), SATV (average score of graduating high-school  students in the state on the verbal component of the SAT), SATM (average score of graduating high-school  students in the state on the math component of the SAT), percent (percent of graduating high school students in the state who took the SAT exam), dollars (state spending on public education, in $1,000s per student), and pay (average teacher's salary in the state, in $1000s). The second dataset, "partisan_lean_state", includes the state, pvi_party (the party of the vote), and the pvi_amount (the Cook Partisan Voting Index of the vote). The dataset "education" has 52 observations per variable while "partisan_lean_state" has 50 observations. Together, the dataset I am  using ("Edu1") has 49 observations for each variable. I decided to continue with these datasets due to the increased relevance due to the election season and also because I enjoyed working with them for Project 1.
+
+
+##1. 
+Perform a MANOVA testing whether any of your numeric variables (or a subset of them, if including them all is unreasonable or doesn't make sense) show a mean difference across levels of one of your categorical variables. 
+
+```{R}
+man <- manova(cbind(pop, dollars, pay, percent, SATV, SATM)~pvi_party, data=Edu)
+summary(man)
+
+summary.aov(man)
+
+ .05/7
+ 1-(.95^7)
+```
+
+The MANOVA test showed significance by the p-value being less than 0.05 at 0.000414. Therefore, univariate ANOVAs were performed. Post-hoc t tests did not have to be permormed because the categorical variable (pvi_party) only has two groups - Democrat (D) and Republican (R). The variables dollars, pay, percent, and SATV proved to be significant with the univariate ANOVAs. Since 7 tests were performed, the bonferroni correction determined that the adjusted p-value is 0.00714 and that the probability of at least one Type I error is 30.17%. With this adjusted p-value, only dollars (p=0.0005263), pay (p=2.627e-05), and percent (p=0.0004713) are still significant and thus these variables were found to differ signficantly by political party. 
+
+
+```{R}
+
+group <- Edu1$pvi_party 
+DVs <- Edu1 %>% select(pop, dollars, pay, percent, SATV, SATM)
+
+#Test multivariate normality for each group (null: assumption met)
+sapply(split(DVs,group), mshapiro_test)
+
+
+```
+
+For the assumptions, the multivariate normality was not met, the p values per group are much smaller than 0.05 at 2.174207e-06 for the Democratic party and 1.528084e-06 for the Republican party. This may be because this data has not been altered in any way and has only 49 observations.
+
+
+##2. 
+Perform some kind of randomization test on your data (that makes sense). The statistic can be anything you want (mean difference, correlation, F-statistic/ANOVA, chi-squared), etc. State null and alternative hypotheses, perform the test, and interpret the results. Create a plot visualizing the null distribution and the test statistic.
+
+```{R}
+Edu1 %>% group_by(pvi_party) %>% summarize(means=mean(dollars)) %>% summarize(`mean_diff`=diff(means))
+
+random_distribution<-vector() 
+for(i in 1:5000){
+  new<-data.frame(dollars=sample(Edu1$dollars),pvi_party=Edu1$pvi_party) 
+  random_distribution[i]<-mean(new[new$pvi_party=="R",]$dollars) - 
+  mean(new[new$pvi_party=="D",]$dollars)
+} 
+
+{hist(random_distribution,main="",ylab=""); abline(v = c(-1.243, 1.243),col="red")}
+
+mean(random_distribution>1.243 | random_distribution< -1.243) 
+
+```
+H0: The difference in means is equal to 0.
+HA: The difference in means is not equal to 0.
+
+A mean difference was performed because there are categorical and numeric variables. The observed difference in means, the test statistic, is 1.243342. This test statistic is represented by the red lines on the histogram. The p-value of 2e-04 proves that the null hypothesis is rejected and that the difference in means is not equal to 0. 
+
+
+##3. 
+Build a linear regression model predicting one of your response variables from at least 2 other variables, including their interaction. Mean-center any numeric variables involved in the interaction.
+
+```{R}
+Edu1$pop_c <- Edu1$pop - mean(Edu1$pop, na.rm = T)
+
+edu_fit <- lm(pay ~ pvi_party * pop_c, data=Edu1)
+summary(edu_fit)
+```
+  
+From the coefficient estimates, the intercept 3.370e+01 shows the mean pay when the centered population equals zero and the political party is Democrat. pvi_partyR (-5.064e+00) is the difference bewteen the two pays between parties when the centered population is 0. The pop_c means that for every unit increase in the centered population, the pay goes up by 3.428e-04 (in $1000s).   
+    
+   
+```{R}
+ggplot(Edu1, aes(pop_c, pay, color = pvi_party)) + 
+  geom_smooth(method = "lm") +
+  geom_point() +
+  ggtitle("Population and Political Party on Average Teachers' Salary") +
+  scale_x_continuous(breaks= seq(-10000,30000,5000), name="Mean-Centered Population") + 
+  scale_y_continuous(breaks= seq(0,60,5), name="Average Teachers' Salary (in $1,000s)")
+  
+```
+    
+    
+```{R}
+edu_fit <- lm(pay ~ pvi_party * pop_c, data=Edu1)
+fitted <- edu_fit$fitted.values
+resids <- edu_fit$residuals
+
+#Shapiro-Wilk normality test
+shapiro.test(resids) #H0 : true distribution is normal 
+
+#Breusch-Pagan Test for homoskedasticity
+bptest(edu_fit) 
+
+#normality did not pass but data is homoskedastic
+
+```
+
+From checking the assumptions, we see that normality is violated because the p-value for the Shapiro-Wilk normality test is below 0.05 at 0.0008212. We also see that the data is homoskedastic since the data passed the Breusch-Pagan test with a p-value of 0.6514.
+  
+    
+```{R}
+summary(edu_fit)$coef
+coeftest(edu_fit, vcov = vcovHC(edu_fit))
+```
+Using robust standard errors, we see that pvi_partyR is significant with a p-value of 5.436e-05. This differs in that pop_c is no longer significant. The p-value for pvi_partyR decreased from 7.93e-05 to 5.436e-05. Further, the standard error for pvi_partyR decreased from 1.166e+00 to 1.1356e+00.
+
+```{R}
+summary(edu_fit)$r.sq
+```
+The outcome explains 43.59% or 0.4359 of the variation in the model.
+
+##4. 
+Rerun same regression model (with the interaction), but this time compute bootstrapped standard errors (either by resampling observations or residuals). Discuss any changes you observe in SEs and p-values using these SEs compared to the original SEs and the robust SEs)
+
+```{R}
+boot_edu <- Edu1 %>% sample_frac(replace=TRUE)
+
+samp_distn <- replicate(5000, {
+  boot_edu <- Edu1 %>% sample_frac(replace=TRUE)
+  fit<-lm(pay ~ pvi_party * pop_c, data=boot_edu)
+  coef(fit)
+})
+
+## Estimated SEs
+samp_distn%>%t%>%as.data.frame%>%summarize_all(sd)
+
+
+## Empirical 95% CI 
+samp_distn%>%t%>%as.data.frame%>%pivot_longer(1:3)%>%group_by(name)%>%
+ summarize(lower=quantile(value,.025), upper=quantile(value,.975))
+
+```
+The standard error for pvi_partyR decreased from 1.166 and 1.1356 to 1.047054, meaning that the p-value also decreased for pvi_partyR.
+
+
+##5. 
+Fit a logistic regression model predicting a binary variable 
+
+```{R}
+edu5 <- Edu1 %>% select(-pvi_party)
+edu5 <- edu5 %>% mutate(Dem = case_when(Democratic == 1~"Yes", Democratic == 0 ~ "No"))
+edufit2 <- glm(Democratic ~ pay + dollars, data = edu5, family="binomial") 
+coeftest(edufit2)
+
+coef(edufit2)%>%exp%>%round(3)%>%data.frame
+
+```
+The coefficient estimates determine the log odds. Going up by one unit of pay multiplies odds by a factor of 1.332. Going up by one unit of dollars multiplies odds by a factor of 1.172. This was determined by exponentiating the coefficients.  
+ 
+    
+Confusion Matrix
+```{R}
+edu5$probs <- predict(edufit2, type="response")
+table(predict=as.numeric(edu5$probs>.5),truth=edu5$Democratic) %>% addmargins
+```   
+    
+
+```{R}
+class_diag(edu5$probs,edu5$Democratic)
+
+```   
+The accuracy is 0.7755, the sensitivity is 0.5556, the specificity is 0.9032, the precision is 0.7692. Also, the AUC is 0.857 indicating a good model!
+
+
+Density plot of the log-odds (logit) colored/grouped by your binary outcome variable 
+```{R}
+fit3 <- glm(Democratic ~ pay + dollars, data = edu5, family=binomial(link="logit"))
+
+edu5$logit <- predict(fit3,type="link") 
+
+edu5 %>% ggplot()+geom_density(aes(logit, color=Dem, fill= Dem), alpha=.4)+
+  theme(legend.position=c(.85,.85))+geom_vline(xintercept=0)+xlab("predictor (logit)")
+```    
+    
+
+ROC curve (plot) 
+```{R}
+ROCplot<-ggplot(fit3)+geom_roc(aes(d=Democratic, m=pay + dollars), n.cuts=0) 
+ROCplot
+
+calc_auc(ROCplot)
+```    
+The ROC plot proves that this model is good with an AUC of 0.864. This curve shows the "tradeoff between sensitivity and specificity.(Woodward)"
+
+
+##6. 
+Perform a logistic regression predicting the same binary response variable from *ALL* of the rest of your variables (the more, the better!) 
+```{R}
+glmfit <- glm(Democratic~region+pvi_amount+pop+dollars+pay+percent+SATV+SATM,data=edu5,family="binomial")
+```
+    
+```{R}
+probs <- predict(glmfit,type="response")
+class_diag(probs,edu5$Democratic)
+```   
+These in-sample classification diagnostics show that the model is great (AUC = 0.9337).
+
+10-fold CV 
+```{R}
+k=10
+
+data<-edu5[sample(nrow(edu5)),] 
+folds<-cut(seq(1:nrow(edu5)),breaks=k,labels=F)
+
+diags<-NULL
+for(i in 1:k){
+  train<-data[folds!=i,] 
+  test<-data[folds==i,]
+  truth<-test$Democratic
+  
+  fit<-glm(Democratic~(region+pvi_amount+pop+dollars+pay+percent+SATV+SATM),data=train,family="binomial")
+  probs<-predict(fit,newdata = test,type="response")
+  
+  diags<-rbind(diags,class_diag(probs,truth))
+}
+
+```   
+
+```{R}
+summarize_all(diags,mean) 
+```
+The AUC shows that the model is in fact poor (AUC=0.6389).
+
+LASSO   
+```{R}
+
+y<-as.matrix(edu5$Democratic)
+edu_preds<-model.matrix(Democratic~(-1+region+pvi_amount+pop+dollars+pay+percent+SATV+SATM),data=edu5) 
+cv <- cv.glmnet(edu_preds,y, family="binomial") 
+
+{plot(cv$glmnet.fit, "lambda", label=TRUE); abline(v = log(cv$lambda.1se)); abline(v = log(cv$lambda.min),lty=2)}
+
+lasso_fit<-glmnet(edu_preds,y,family="binomial",lambda=cv$lambda.1se)
+probss <- predict(lasso_fit, edu_preds , type="response")
+coef(lasso_fit)
+class_diag(probss, edu5$Democratic)
+table(prediction=as.numeric(probss>.5), truth=edu5$Democratic) %>% addmargins
+
+```
+Through LASSO only the variable pay is retained.
+
+
+Perform 10-fold CV using only the variables lasso selected
+```{R}
+k=10
+
+data <- edu5 %>% sample_frac 
+folds <- cut(seq(1:nrow(edu5)), breaks=k,labels=F)
+
+diags<-NULL 
+for(i in 1:k){
+  train <- data[folds!=i,] 
+  test <- data[folds==i,] 
+  truth <- test$Democratic 
+  
+  fit <- glm(Democratic~pay, data=train, family="binomial")
+  probs <- predict(fit, newdata=test, type="response") 
+  diags <- rbind(diags, class_diag(probs,truth))
+} 
+```
+
+```{R}
+diags%>%summarize_all(mean)
+```
+The out-of-sample AUC is less than the logistic regressions above. The AUC dropped from 0.6389 in the 10-fold CV.
+
