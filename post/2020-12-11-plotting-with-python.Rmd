@@ -1,0 +1,32 @@
+---
+title: Plotting with Python
+author: Alexandra Asgarian
+date: '2020-12-11'
+slug: plotting-with-python
+categories: []
+tags: []
+description: ''
+---
+
+# Basic Plotting with Python
+
+Courtesy of 
+
+<center>
+![](/post/2020-12-11-plotting-with-python_files/Screen Shot 2020-12-11 at 10.54.32 PM.png){width=50%}
+<center>
+
+Above we see basic commands and advice for plotting.
+
+## Getting Started
+
+You will want to import "matplotlib.pyplot as plt"
+
+
+More content
+
+```{R}
+iris <- iris
+head(iris)
+```
+

@@ -8,14 +8,16 @@
     <language>en-US</language>
     <lastBuildDate>Fri, 11 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Python</title>
-      <link>/post/2020/12/11/test-post/</link>
+      <title>Plotting with Python</title>
+      <link>/post/2020/12/11/plotting-with-python/</link>
       <pubDate>Fri, 11 Dec 2020 00:00:00 +0000</pubDate>
       
-      <guid>/post/2020/12/11/test-post/</guid>
-      <description> Heading of my post! Content of my post!
-Subheading More content
-quakes &amp;lt;- quakes r.quakes.mag.mean() ## 4.6204000000000001     </description>
+      <guid>/post/2020/12/11/plotting-with-python/</guid>
+      <description>Basic Plotting with Python Courtesy of
+  Above we see basic commands and advice for plotting.
+Getting Started You will want to import &amp;quot;matplotlib.pyplot as plt&amp;quot;
+More content
+iris &amp;lt;- iris head(iris) ## Sepal.Length Sepal.Width Petal.Length Petal.Width Species ## 1 5.1 3.5 1.4 0.2 setosa ## 2 4.9 3.0 1.4 0.2 setosa ## 3 4.7 3.2 1.3 0.2 setosa ## 4 4.6 3.1 1.5 0.2 setosa ## 5 5.</description>
     </item>
     
   </channel>
