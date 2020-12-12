@@ -1,6 +1,6 @@
 ---
 title: Test Post
-author: ''
+author: 'Alexandra Asgarian'
 date: '2020-12-11'
 slug: test-post
 categories: []
