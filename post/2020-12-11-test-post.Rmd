@@ -1,5 +1,5 @@
 ---
-title: Test Post
+title: Python
 author: 'Alexandra Asgarian'
 date: '2020-12-11'
 slug: test-post
