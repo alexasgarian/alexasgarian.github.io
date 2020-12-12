@@ -1,0 +1,47 @@
+---
+title: 'Python: Pandas'
+author: Alexandra Asgarian
+date: '2020-12-11'
+slug: python-pandas
+categories: []
+tags: []
+description: ''
+---
+
+<center>
+![](/post/2020-12-11-python-pandas_files/Screen Shot 2020-12-12 at 12.08.31 AM.png){width=80%} 
+
+Courtesy of: https://realpython.com/pandas-plot-python/
+</center>
+
+Pandas is a library of functions used to analyze data in Python. Personally, being more used to RStudio and the dyplr function, I use this table when confused using pandas. As you can see some overlap exists in the naming of the functions. 
+
+<center>
+![](/post/2020-12-11-python-pandas_files/Screen Shot 2020-12-12 at 12.28.20 AM.png){width=50%}
+</center>
+
+###So how do we get started? 
+
+First we need to run "import pandas as pd".
+
+```{python}
+import pandas as pd
+```
+
+To display some of pandas functions, I will be using the quakes dataset.
+
+```{R}
+library(tidyverse)
+library(reticulate)
+quakes <- quakes
+head(quakes)
+```
+
+
+
+Now, let's just explore some basic functions!
+
+```{python}
+iris = r.iris 
+(iris.filter(['Sepal.Width', 'Sepal.Length']).head(6))
+```

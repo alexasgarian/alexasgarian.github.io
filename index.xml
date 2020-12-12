@@ -8,19 +8,6 @@
     <language>en-US</language>
     <lastBuildDate>Fri, 11 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Plotting with Python</title>
-      <link>/post/2020/12/11/plotting-with-python/</link>
-      <pubDate>Fri, 11 Dec 2020 00:00:00 +0000</pubDate>
-      
-      <guid>/post/2020/12/11/plotting-with-python/</guid>
-      <description>Basic Plotting with Python Courtesy of
-  Above we see basic commands and advice for plotting.
-Getting Started You will want to import &amp;quot;matplotlib.pyplot as plt&amp;quot;
-More content
-iris &amp;lt;- iris head(iris) ## Sepal.Length Sepal.Width Petal.Length Petal.Width Species ## 1 5.1 3.5 1.4 0.2 setosa ## 2 4.9 3.0 1.4 0.2 setosa ## 3 4.7 3.2 1.3 0.2 setosa ## 4 4.6 3.1 1.5 0.2 setosa ## 5 5.</description>
-    </item>
-    
-    <item>
       <title>Project 1: Exploratory Data Analysis</title>
       <link>/project/project1/</link>
       <pubDate>Fri, 11 Dec 2020 00:00:00 +0000</pubDate>
@@ -38,6 +25,17 @@ Data Wrangling and Data Exploration library(tidyverse) library(ggplot2) library(
       <guid>/project/project2/</guid>
       <description>0. Introduce your dataset and each of your variables (or just your main variables if you have lots) in a paragraph. What are they measuring? How many observations?
 My dataset is a compilation of two datasets from the server. The first, originally called &amp;quot;education&amp;quot;, was from the carData package (originally labeled &amp;quot;States&amp;quot;) and my second was called &amp;quot;partisan_lean_state&amp;quot; from the fivethirtyeight package. I also used stateabbr from the server to help combine the two packages on the basis of state.</description>
+    </item>
+    
+    <item>
+      <title>Python: Pandas</title>
+      <link>/post/2020/12/11/python-pandas/</link>
+      <pubDate>Fri, 11 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/post/2020/12/11/python-pandas/</guid>
+      <description>Courtesy of: https://realpython.com/pandas-plot-python/  Pandas is a library of functions used to analyze data in Python. Personally, being more used to RStudio and the dyplr function, I use this table when confused using pandas. As you can see some overlap exists in the naming of the functions.
+  So how do we get started? First we need to run &amp;quot;import pandas as pd&amp;quot;.
+import pandas as pd To display some of pandas functions, I will be using the quakes dataset.</description>
     </item>
     
     <item>
