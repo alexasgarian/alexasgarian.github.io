@@ -28,20 +28,32 @@ First we need to run "import pandas as pd".
 import pandas as pd
 ```
 
-To display some of pandas functions, I will be using the quakes dataset.
+
+To display an example of a pandas function, I will be using the iris dataset.
 
 ```{R}
 library(tidyverse)
 library(reticulate)
-quakes <- quakes
-head(quakes)
+iris <- read_csv("iris.csv")
+head(iris)
 ```
 
 
 
-Now, let's just explore some basic functions!
+###Now, let's explore some basic functions!
 
 ```{python}
-iris = r.iris 
-(iris.filter(['Sepal.Width', 'Sepal.Length']).head(6))
+iris1 = r.iris
+(iris1.filter(['sepal_width', 'sepal_length']).head(6))
 ```
+
+Here we see filter acting as select would with dyplr. So pandas is choosing to look closer at values for sepal_width and sepal_length. To see the first six values for each variable, we use "head(6)". Note that instead of piping with "%", now "." acts as a pipe in Python.
+
+We could further analyze this dataset by finding the mean sepal_length or sepal_width with the "agg" function. Or sorting the values of sepal_width and sepal_length in descending order to see which species has the largest sepal length and which has the largest sepal width.
+
+"Filter" works to pull specific columns from the dataset while "query" pulls specific rows  for a specified variable. For example, all sepal lengths for the virginica species of irises can be pulled by specifying with "query" that you only want data from when "species=='virginica'". Then, "sort_values" can arrange the numerical rows of a variable in ascending or descending order. "Groupby" has the capability to clump categorical responses for a variable. For example, grouping by species of iris. "Assign" can add colums and data to your dataset while "agg" can perform mathematical calculations, such as, mean, median, and count.
+
+Therefore, the pandas functions allow us to analyze and alter any dataset. As you can see, pandas works very similarly to dyplr to achieve similar results in Python instead of RStudio. 
+
+
+

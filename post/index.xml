@@ -15,7 +15,7 @@
       <guid>/post/2020/12/11/python-pandas/</guid>
       <description>Courtesy of: https://realpython.com/pandas-plot-python/  Pandas is a library of functions used to analyze data in Python. Personally, being more used to RStudio and the dyplr function, I use this table when confused using pandas. As you can see some overlap exists in the naming of the functions.
   So how do we get started? First we need to run &amp;quot;import pandas as pd&amp;quot;.
-import pandas as pd To display some of pandas functions, I will be using the quakes dataset.</description>
+import pandas as pd To display an example of a pandas function, I will be using the iris dataset.</description>
     </item>
     
   </channel>
